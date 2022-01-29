@@ -50,4 +50,79 @@ EXEC usp_GetEmployeesFromTown 'Sofia'
 
 GO
 
+--Problem 5. Salary Level Function
+
+CREATE OR ALTER FUNCTION ufn_GetSalaryLevel(@salary DECIMAL(18,4)) 
+RETURNS VARCHAR(10)
+AS
+BEGIN
+DECLARE @result NVARCHAR(10);
+
+  IF (@salary < 30000)
+	SET @result = 'Low';
+  IF (@salary >= 30000 AND @salary <= 50000)
+	SET @result = 'Average';
+  IF (@salary > 50000)
+	SET @result = 'High';
+
+  RETURN @result;
+END
+
+GO
+
+SELECT e.Salary, dbo.ufn_GetSalaryLevel(e.Salary)
+  FROM Employees AS e
+
+GO
+
+--Problem 6. Employees by Salary Level
+
+CREATE OR ALTER PROCEDURE usp_EmployeesBySalaryLevel(@salaryLevel NVARCHAR(10))
+AS
+SELECT e.FirstName,
+	   e.LastName
+  FROM Employees AS e
+ WHERE dbo.ufn_GetSalaryLevel(e.Salary) = @salaryLevel
+
+EXEC usp_EmployeesBySalaryLevel 'Low'
+
+GO
+
+--Problem 7. Define Function
+
+CREATE OR ALTER FUNCTION ufn_IsWordComprised
+	(
+		@setOfLetters NVARCHAR(MAX),
+		@word NVARCHAR(MAX)
+	)
+RETURNS INT
+AS
+BEGIN
+
+DECLARE @start INT = 1;
+DECLARE @end INT = LEN(@word);
+
+WHILE (@start <= @end)
+	BEGIN
+
+		DECLARE @currLetter NVARCHAR = SUBSTRING(@word, @start, 1);
+		DECLARE @searchedLetterIndex INT = CHARINDEX(@currLetter, @setOfLetters,1)
+
+		IF (@searchedLetterIndex = 0)
+			RETURN 0;
+
+		SET @start = @start + 1;
+	END
+
+RETURN 1;
+END
+
+GO
+
+SELECT dbo.ufn_IsWordComprised('ppppp', 'Guy') AS Result
+
+GO
+
+
+
 
