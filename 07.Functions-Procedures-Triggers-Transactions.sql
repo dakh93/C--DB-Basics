@@ -293,10 +293,75 @@ END
 
 GO
 
+--Problem 14. Create Table Logs
+USE Bank
+GO 
 
 
+CREATE TABLE Logs
+(
+	LogId INT NOT NULL IDENTITY,
+	AccountId INT NOT NULL,
+	OldSum DECIMAL(15, 2) NOT NULL,
+	NewSum DECIMAL(15, 2) NOT NULL
+
+	CONSTRAINT PK_Logs
+	PRIMARY KEY(LogId),
+
+	CONSTRAINT FK_Logs_Accounts
+	FOREIGN KEY(AccountId)
+	REFERENCES Accounts(Id)
+)
+GO
+
+CREATE TRIGGER tr_AccountsSumChange ON Accounts 
+AFTER UPDATE
+AS
+BEGIN
 
 
+	INSERT INTO Logs
+	SELECT i.id,
+		   d.Balance AS [OldSum],
+		   i.Balance AS [NewSum]
+	  FROM inserted AS i
+	  JOIN deleted AS d
+	   ON d.Id = i.Id
 
+END
+GO
+
+--Problem 15. Create Table Emails
+
+CREATE TABLE NotificationEmails
+(
+	Id INT NOT NULL IDENTITY,
+	Recipient NVARCHAR(50) NOT NULL,
+	[Subject] NVARCHAR(50) NOT NULL,
+	Body NVARCHAR(50) NOT NULL
+
+	CONSTRAINT PK_NotificationEmails
+	PRIMARY KEY(Id)
+)
+GO
+
+CREATE TRIGGER tr_EmailChangesOfBalance
+ON Logs
+AFTER INSERT
+AS
+BEGIN
+
+	INSERT INTO NotificationEmails
+	SELECT i.AccountId AS [Recipient],
+		   CONCAT('Balance change for account: ', i.AccountId) AS [Subject],
+		   CONCAT('On ', GETDATE(),
+				   ' your balance was changed from ', 
+				   i.OldSum, ' to ', i.NewSum, '.') AS [Body]
+	 FROM inserted AS i
+
+END
+GO
+
+--Problem 16. Deposit Money
 
 
