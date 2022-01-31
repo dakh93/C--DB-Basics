@@ -175,6 +175,128 @@ END
 
 GO
 
+--Problem 10. People with Balance Higher Than
+
+CREATE OR ALTER PROCEDURE usp_GetHoldersWithBalanceHigherThan(@money DECIMAL(15,2))
+AS
+BEGIN
+
+--SELECT ac.FirstName,
+--	   ac.LastName,
+--	   Filtered.TotalBalance
+--  FROM	(
+--			SELECT a.AccountHolderId,
+--				SUM(a.Balance) AS [TotalBalance]
+--			FROM Accounts AS a
+--			JOIN AccountHolders AS ac
+--				ON ac.Id = a.AccountHolderId
+--			GROUP BY a.AccountHolderId
+--			HAVING SUM(a.Balance) > @money
+--		) AS Filtered
+--  JOIN AccountHolders AS ac
+--    ON ac.Id = Filtered.AccountHolderId
+------------------------------------------------------------------
+--SECOND SOLUTION
+
+SELECT ah.FirstName,
+	       ah.LastName 
+	  FROM Accounts AS a
+INNER JOIN AccountHolders AS ah
+        ON ah.Id = a.AccountHolderId
+  GROUP BY ah.FirstName,
+           ah.LastName
+	HAVING SUM(a.Balance) > @money
+END
+
+GO
+
+--Problem 11. Future Value Function
+
+CREATE OR ALTER FUNCTION ufn_CalculateFutureValue
+(
+		@sum DECIMAL(15,2),
+		@yearlyInterestRate FLOAT,
+		@numberOfYears INT
+)
+RETURNS DECIMAL(15,4)
+AS
+BEGIN
+
+DECLARE @result DECIMAL(15,4) =
+			@sum * (POWER(1 + @yearlyInterestRate, @numberOfYears));
+
+RETURN @result;
+
+END
+
+GO
+
+--Problem 12. Calculating Interest(with function of previous task)
+
+CREATE OR ALTER PROCEDURE usp_CalculateFutureValueForAccount
+(
+	@accID INT,
+	@interestRate FLOAT
+)
+AS
+BEGIN
+
+SELECT TOP(1)
+	   ah.Id,
+	   ah.FirstName,
+	   ah.LastName,
+	   acc.Balance AS [CurrentBalance],
+	   dbo.ufn_CalculateFutureValue(acc.Balance, @interestRate, 5) AS [Balance in 5 years]
+  FROM AccountHolders AS ah
+  JOIN Accounts AS acc
+    ON acc.AccountHolderId = ah.Id
+ WHERE ah.Id = @accID
+
+END
+
+EXEC usp_CalculateFutureValueForAccount 1, 0.1
+GO
+
+USE Diablo
+GO
+--Problem 13. *Scalar Function: Cash in User Games Odd Rows
+
+CREATE OR ALTER FUNCTION ufn_CashInUsersGames(@gameName NVARCHAR(50))
+RETURNS @ResultTable TABLE(SumCash DECIMAL(15,4))
+AS
+BEGIN
+
+DECLARE @result DECIMAL(15, 4) = (
+					SELECT SUM(Filtered.Cash)
+					  FROM (
+							SELECT 
+									ROW_NUMBER() OVER(
+									ORDER BY ug.Cash DESC) AS [RowNumber],
+									ug.Cash
+							  FROM UsersGames AS ug
+							  JOIN Users AS u
+								ON u.Id = ug.UserId
+							  JOIN Games AS g
+								ON g.Id = ug.GameId
+							 WHERE g.Name = @gameName
+							 
+							 ) AS Filtered
+					WHERE Filtered.RowNumber % 2 <> 0
+				  );
+
+	INSERT INTO @ResultTable 
+	VALUES (@result)
+
+	RETURN
+
+END
+
+GO
+
+
+
+
+
 
 
 
