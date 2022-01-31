@@ -123,6 +123,58 @@ SELECT dbo.ufn_IsWordComprised('ppppp', 'Guy') AS Result
 
 GO
 
+--Problem 8. * Delete Employees and Departments
+
+CREATE OR ALTER PROCEDURE usp_DeleteEmployeesFromDepartment (@departmentId INT) 
+AS 
+BEGIN
+	
+	ALTER TABLE Departments
+	ALTER COLUMN ManagerID INT
+
+	ALTER TABLE Departments
+	NOCHECK CONSTRAINT ALL
+
+	ALTER TABLE Employees
+	NOCHECK CONSTRAINT ALL
+
+	ALTER TABLE EmployeesProjects
+	NOCHECK CONSTRAINT ALL
+
+	ALTER TABLE EmployeesProjects
+	NOCHECK CONSTRAINT ALL
+
+	DELETE 
+	  FROM Employees
+	 WHERE DepartmentID = @departmentId
+
+	DELETE 
+	  FROM Departments
+	 WHERE DepartmentID = @departmentId
+
+	SELECT COUNT(*)
+	  FROM Employees AS e
+	 WHERE e.DepartmentID = @departmentId
+
+END
+
+GO
+
+USE Bank
+
+--Problem 9. Find Full Name
+
+CREATE OR ALTER PROCEDURE usp_GetHoldersFullName
+AS
+BEGIN
+
+SELECT ah.FirstName + ' ' + ah.LastName AS [Full Name]
+  FROM AccountHolders AS ah
+
+END
+
+GO
+
 
 
 
