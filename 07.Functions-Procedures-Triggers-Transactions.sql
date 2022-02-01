@@ -364,4 +364,197 @@ GO
 
 --Problem 16. Deposit Money
 
+CREATE OR ALTER PROCEDURE usp_DepositMoney
+(
+	@AccountId INT,
+	@MoneyAmount DECIMAL (15, 4)
+)
+AS
+BEGIN
+
+	IF (@MoneyAmount < 0)
+	BEGIN
+		;THROW 60000, 'Zero or negative input', 1
+	END
+
+	UPDATE Accounts 
+	   SET Balance += @MoneyAmount
+	 WHERE Id = @AccountId
+
+
+END
+
+GO
+
+--Problem 17. Withdraw Money
+
+CREATE OR ALTER PROCEDURE usp_WithdrawMoney
+(
+	@AccountId INT,
+	@MoneyAmount DECIMAL (15, 4)
+)
+AS
+BEGIN
+
+DECLARE @CurrentAmout DECIMAL(15, 4) = (
+							SELECT a.Balance
+							  FROM Accounts AS a
+							 WHERE a.Id = @AccountId
+						);
+
+	IF (@MoneyAmount < 0)
+	BEGIN
+		;THROW 60000, 'Zero or negative input', 1
+	END
+	IF (@MoneyAmount > @CurrentAmout )
+	BEGIN
+		;THROW 60000, 'Insufficient fund', 1
+	END
+
+	UPDATE Accounts 
+	   SET Balance -= @MoneyAmount
+	 WHERE Id = @AccountId
+
+
+END
+
+GO
+
+--Problem 18. Money Transfer
+
+CREATE OR ALTER PROCEDURE usp_TransferMoney
+(
+	@SenderId INT,
+	@ReceiverId INT,
+	@Amount DECIMAL (15, 4)
+)
+AS
+BEGIN
+
+EXEC usp_WithdrawMoney @SenderId, @Amount
+EXEC usp_DepositMoney @ReceiverId, @Amount
+
+END
+
+GO
+
+--Problem 20. *Massive Shopping
+
+DECLARE @UserId INT = 9;
+DECLARE @GameId INT = 87;
+DECLARE @MinLevel INT = 11;
+DECLARE @MaxLevel INT = 12;
+
+DECLARE @TotalPriceOfItems DECIMAL(15, 2) = 
+(
+	SELECT SUM(Price)
+	FROM Items
+	WHERE MinLevel IN (@MinLevel, @MaxLevel)
+)
+
+DECLARE @CurrentBalance DECIMAL (15, 2) = 
+(
+SELECT ug.Cash
+FROM UsersGames AS ug
+ WHERE ug.UserId = @UserId AND
+	   ug.GameId = @GameId
+
+)
+BEGIN TRANSACTION tr_BuyItemsFromLevel11And12
+
+	BEGIN TRY
+
+	--Taking money for items
+	UPDATE UsersGames
+	   SET Cash -= @TotalPriceOfItems
+	 WHERE UserId = @UserId AND
+		   GameId = @GameId
+
+	--Input items for User
+	INSERT INTO UserGameItems(ItemId, UserGameId)
+	(
+		SELECT i.Id, @GameId 
+		  FROM Items AS i
+		 WHERE i.MinLevel IN (@MinLevel, @MaxLevel)
+	)
+
+
+		  COMMIT TRANSACTION tr_BuyItemsFromLevel11And12
+	END TRY
+  
+	BEGIN CATCH
+
+		  ROLLBACK TRANSACTION 
+
+	END CATCH  
+
+
+--------------------------
+SET @MinLevel  = 19;
+SET @MaxLevel  = 21;
+
+SET @TotalPriceOfItems  = 
+(
+	SELECT SUM(Price)
+	FROM Items
+	WHERE MinLevel IN (@MinLevel, @MaxLevel)
+)
+
+SET @CurrentBalance   = 
+(
+SELECT ug.Cash
+FROM UsersGames AS ug
+ WHERE ug.UserId = @UserId AND
+	   ug.GameId = @GameId
+
+)
+BEGIN TRANSACTION tr_BuyItemsFromLevel19And21
+
+	BEGIN TRY
+
+	--Taking money for items
+	UPDATE UsersGames
+	   SET Cash -= @TotalPriceOfItems
+	 WHERE UserId = @UserId AND
+		   GameId = @GameId
+
+	--Input items for User
+	INSERT INTO UserGameItems(ItemId, UserGameId)
+	(
+		SELECT i.Id, @GameId 
+		  FROM Items AS i
+		 WHERE i.MinLevel IN (@MinLevel, @MaxLevel)
+	)
+
+
+		  COMMIT TRANSACTION tr_BuyItemsFromLevel19And21
+
+	  END TRY
+
+	  BEGIN CATCH
+
+		  ROLLBACK TRANSACTION 
+
+	  END CATCH  
+
+SELECT i.Name AS [Item Name]
+  FROM UserGameItems AS ugi
+  JOIN Items AS i ON i.Id = ugi.ItemId
+  JOIN UsersGames AS ug ON ug.Id = ugi.UserGameId
+  JOIN Games AS g ON g.Id = ug.GameId
+ WHERE g.Id = @GameId
+ORDER BY [Item Name]
+ 
+   
+
+
+
+
+
+
+
+
+
+
+
 
