@@ -544,6 +544,78 @@ SELECT i.Name AS [Item Name]
   JOIN Games AS g ON g.Id = ug.GameId
  WHERE g.Id = @GameId
 ORDER BY [Item Name]
+
+GO
+
+--Problem 21. Employees with Three Projects
+
+CREATE OR ALTER PROCEDURE usp_AssignProject
+(
+	@emloyeeId INT,
+	@projectID INT
+) 
+AS
+BEGIN 
+		BEGIN TRANSACTION
+		DECLARE @ProjectsCount INT =
+										( SELECT COUNT(ep.ProjectID)
+											FROM EmployeesProjects AS ep
+										   WHERE ep.EmployeeID = @emloyeeId
+										)
+	
+		DECLARE @MaxProjects INT = 3;
+
+		IF(@ProjectsCount >= @MaxProjects)
+		BEGIN
+			RAISERROR('The employee has too many projects!', 16, 1)
+			ROLLBACK
+			RETURN
+		END
+
+		INSERT INTO EmployeesProjects VALUES
+		(@emloyeeId, @projectID)
+
+		COMMIT 
+END
+
+GO
+
+--Problem 22. Delete Employees
+
+CREATE TABLE Deleted_Employees
+(
+	EmployeeId INT NOT NULL IDENTITY, 
+	FirstName NVARCHAR(50), 
+	LastName NVARCHAR(50), 
+	MiddleName NVARCHAR(50), 
+	JobTitle NVARCHAR(50), 
+	DepartmentId INT NOT NULL, 
+	Salary DECIMAL(15, 2),
+
+	CONSTRAINT PK_EmployeeId
+	PRIMARY KEY (EmployeeId)
+) 
+
+
+
+CREATE TRIGGER tr_InsertIntoDeletedEmployees
+ON Employees
+AFTER DELETE
+AS
+BEGIN
+
+	INSERT INTO Deleted_Employees
+	SELECT d.FirstName,
+		   d.LastName,
+		   d.MiddleName,
+		   d.JobTitle,
+		   d.DepartmentId,
+		   d.Salary
+	  FROM deleted AS d
+
+END
+
+
  
    
 
